@@ -512,7 +512,7 @@ public class Entity : FactorioObject {
     public float mapGenDensity { get; internal set; }
     public float basePower { get; internal set; }
     public float Power(Quality quality)
-        => factorioType is "boiler" or "reactor" or "generator" or "burner-generator" or "accumulator" ? quality.ApplyStandardBonus(basePower)
+        => factorioType is "boiler" or "reactor" or "generator" or "burner-generator" or "fusion-reactor" or "fusion-generator" or "accumulator" ? quality.ApplyStandardBonus(basePower)
         : factorioType is "beacon" ? basePower * quality.BeaconConsumptionFactor
         : basePower;
     public EntityEnergy energy { get; internal set; } = null!; // TODO: Prove that this is always properly initialized. (Do we need an EntityWithEnergy type?)
@@ -917,6 +917,10 @@ public class EntityBelt : Entity {
 
 public class EntityReactor : EntityCrafter {
     public float reactorNeighborBonus { get; internal set; }
+}
+
+public class EntityFusionReactor : EntityCrafter {
+    public float fusionReactorNeighborBonus { get; internal set; }
 }
 
 public class EntityBeacon : EntityWithModules {
