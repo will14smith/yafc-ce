@@ -167,6 +167,8 @@ internal partial class FactorioDataDeserializer {
         // Has custom parsing:
         "generator",
         "burner-generator",
+        "fusion-reactor",
+        "fusion-generator",
         // Doesn't consume energy:
         "offshore-pump",
         "solar-panel",
@@ -407,6 +409,12 @@ internal partial class FactorioDataDeserializer {
                 break;
             case "generator":
                 goto case "burner-generator";
+            case "fusion-generator":
+                DeserializeFusionGenerator(table);
+                break;
+            case "fusion-reactor":
+                DeserializeFusionReactor(table);
+                break;
             case "inserter":
                 var inserter = GetObject<Entity, EntityInserter>(table);
                 inserter.inserterSwingTime = 1f / (table.Get("rotation_speed", 1f) * 60);
@@ -635,7 +643,7 @@ internal partial class FactorioDataDeserializer {
             }
         }
     }
-
+    
     private void DeserializeAsteroidChunk(LuaTable table, ErrorCollector errorCollector) {
         Entity chunk = DeserializeCommon<Entity>(table, "asteroid-chunk");
         Item asteroid = GetObject<Item>(chunk.name);
