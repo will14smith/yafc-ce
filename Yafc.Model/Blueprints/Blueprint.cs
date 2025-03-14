@@ -10,10 +10,17 @@ using Yafc.UI;
 namespace Yafc.Blueprints;
 
 [Serializable]
-public class BlueprintString(string blueprintName) {
-    public Blueprint blueprint { get; } = new Blueprint(blueprintName);
-    private static readonly byte[] header = [0x78, 0xDA];
+public class BlueprintString {
+    public Blueprint blueprint { get; set; } = null!;
+    private static readonly byte[] header = [0x78, 0xDA]; // zlib best compression header
     private static readonly JsonSerializerOptions jsonSerializerOptions = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+
+    // Parameterless constructor for deserialization
+    public BlueprintString() { }
+
+    public BlueprintString(string blueprintName) {
+        blueprint = new Blueprint(blueprintName);
+    }
 
     public string ToBpString() {
         if (InputSystem.Instance.control) {
@@ -54,17 +61,64 @@ public class BlueprintString(string blueprintName) {
 
         return reader.ReadToEnd();
     }
+
+    public static BlueprintString FromBpString(string bpString) {
+        if (!bpString.StartsWith('0')) {
+            // Try parsing as JSON if it doesn't start with "0"
+            return JsonSerializer.Deserialize<BlueprintString>(bpString, jsonSerializerOptions) 
+                ?? throw new InvalidDataException("Unsupported blueprint version");
+        }
+
+        // Remove the version prefix and decode base64
+        byte[] data = Convert.FromBase64String(bpString[1..]);
+        
+        // Verify header, since it's zlib we'll check the first byte and ignore the second
+        if (data.Length < 2 || data[0] != header[0]) {
+            throw new InvalidDataException("Invalid blueprint format: incorrect header");
+        }
+
+        // Extract checksum (last 4 bytes)
+        byte[] checksumBytes = data[^4..];
+        Array.Reverse(checksumBytes);
+        int expectedChecksum = BitConverter.ToInt32(checksumBytes);
+
+        // Get the compressed data (excluding header and checksum)
+        byte[] compressedData = data[2..^4];
+
+        using var memory = new MemoryStream();
+        using (var deflateStream = new DeflateStream(new MemoryStream(compressedData), CompressionMode.Decompress))
+        {
+            deflateStream.CopyTo(memory);
+        }
+
+        byte[] decompressedData = memory.ToArray();
+
+        // Verify checksum
+        int a = 1, b = 0;
+        for (int i = 0; i < decompressedData.Length; i++)
+        {
+            a = (a + decompressedData[i]) % 65521;
+            b = (b + a) % 65521;
+        }
+        int actualChecksum = (b * 65536) + a;
+
+        if (actualChecksum != expectedChecksum)
+            throw new InvalidDataException("Invalid blueprint format: checksum mismatch");
+
+        return JsonSerializer.Deserialize<BlueprintString>(decompressedData, jsonSerializerOptions) 
+            ?? throw new InvalidDataException("Invalid blueprint data format");
+    }
 }
 
 [Serializable]
 public class Blueprint(string label) {
-    public const int VERSION = 0x01000000;
+    public const ulong VERSION = 0x0000_0000_0100_0000; // major_minor_patch_dev
 
     public string item { get; set; } = "blueprint";
     public string label { get; set; } = label;
-    public List<BlueprintEntity> entities { get; } = [];
-    public List<BlueprintIcon> icons { get; } = [];
-    public int version { get; set; } = VERSION;
+    public List<BlueprintEntity> entities { get; set; } = [];
+    public List<BlueprintIcon> icons { get; set; } = [];
+    public ulong version { get; set; } = VERSION;
 }
 
 [Serializable]
