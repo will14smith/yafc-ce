@@ -34,6 +34,10 @@ internal partial class FactorioDataDeserializer {
     private Fluid GetFluidFixedTemp(string key, int temperature) {
         var basic = GetObject<Fluid>(key);
 
+        return GetFluidFixedTemp(basic, temperature);
+    }
+
+    private Fluid GetFluidFixedTemp(Fluid basic, int temperature) {
         if (basic.temperature == temperature) {
             return basic;
         }
@@ -42,7 +46,7 @@ internal partial class FactorioDataDeserializer {
             temperature = basic.temperatureRange.min;
         }
 
-        string idWithTemp = key + "@" + temperature;
+        string idWithTemp = basic.name + "@" + temperature;
 
         if (basic.temperature == 0) {
             basic.SetTemperature(temperature);

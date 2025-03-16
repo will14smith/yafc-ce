@@ -41,7 +41,6 @@ internal partial class FactorioDataDeserializer {
             throw new Exception("invalid fusion generator");
         }
 
-
         string fuelCategory = SpecialNames.SpecificFluid + inputFluid.name;
         fuelUsers.Add(fusionGenerator, fuelCategory);
             
@@ -54,12 +53,23 @@ internal partial class FactorioDataDeserializer {
             workingTemperature = new TemperatureRange(0, inputFluid.temperatureRange.max),
         };
         
-        var production = CreateSpecialRecipe(electricity, SpecialNames.GeneratorRecipe, "generating.fusion");
-        production.ingredients = [];
-        production.products = [new Product(electricity, 1f), new Product(outputFluid, maxFluidUsagePerTick * 60 / fusionGenerator.basePower)];
-        production.flags |= RecipeFlags.ScaleProductionWithPower;
-        
-        recipeCrafters.Add(fusionGenerator, SpecialNames.GeneratorRecipe);
+        // Create recipes for each possible number of neighbors (0-6)
+        // TODO not 100% sure about this...
+        for (int neighborCount = 0; neighborCount <= 6; neighborCount++) {
+            float totalBonus = 1f + neighborCount;
+            float fluidAmount = maxFluidUsagePerTick * 60 / fusionGenerator.basePower / totalBonus;
+            
+            string generatorCategory = SpecialNames.FusionGeneratorRecipe + "_" + neighborCount;
+            var production = CreateSpecialRecipe(electricity, generatorCategory, $"generating by fusion generator with {neighborCount} neighbors");
+            production.ingredients = [];
+            production.products = [
+                new Product(electricity, 1f), 
+                new Product(outputFluid, fluidAmount)
+            ];
+            production.flags |= RecipeFlags.ScaleProductionWithPower;
+            
+            recipeCrafters.Add(fusionGenerator, generatorCategory);
+        }
     }
     
     private void DeserializeFusionReactor(LuaTable table)
@@ -123,19 +133,26 @@ internal partial class FactorioDataDeserializer {
         
         // neighbour_bonus :: float optional
         // Default: 1
-        fusionReactor.fusionReactorNeighborBonus = table.Get("neighbour_bonus", 1f);
+        float neighborBonus = table.Get("neighbour_bonus", 1f);
+        fusionReactor.fusionReactorNeighborBonus = neighborBonus;
         
-        string fusionCategory = SpecialNames.BoilerRecipe + fusionReactor.name;
-        var fusionRecipe = CreateSpecialRecipe(outputFluid, fusionCategory, "processing in fusion reactor");
-        recipeCrafters.Add(fusionReactor, fusionCategory);
-        
-        fusionRecipe.ingredients = [
-            // electricity needs to be an ingredient since the burner fuel is variable and needs to be the fuel source
-            new Ingredient(electricity, ParseEnergy(powerInput)), 
-            new Ingredient(inputFluid, maxFluidUsage)
-        ];
-        fusionRecipe.products = [new Product(outputFluid, maxFluidUsage)];
-        fusionRecipe.time = 1f;
-        fusionReactor.baseCraftingSpeed = 1f;
+        // Create recipes for each possible number of neighbors (0-6)
+        for (int neighborCount = 0; neighborCount <= 6; neighborCount++) {
+            float totalBonus = 1f + (neighborCount * neighborBonus);
+            Fluid outputFluidAtTemperature = GetFluidFixedTemp(outputFluid, (int)(outputFluidTemperature.min * totalBonus));
+            
+            string fusionCategory = SpecialNames.BoilerRecipe + fusionReactor.name + "_" + neighborCount;
+            var fusionRecipe = CreateSpecialRecipe(outputFluidAtTemperature, fusionCategory, $"processing in fusion reactor with {neighborCount} neighbors");
+            recipeCrafters.Add(fusionReactor, fusionCategory);
+            
+            fusionRecipe.ingredients = [
+                // electricity needs to be an ingredient since the burner fuel is variable and needs to be the fuel source
+                new Ingredient(electricity, ParseEnergy(powerInput)), 
+                new Ingredient(inputFluid, maxFluidUsage)
+            ];
+            fusionRecipe.products = [new Product(outputFluidAtTemperature, maxFluidUsage)];
+            fusionRecipe.time = 1f;
+            fusionReactor.baseCraftingSpeed = 1f;
+        }
     }
 }

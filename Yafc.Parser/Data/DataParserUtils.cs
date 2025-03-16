@@ -123,6 +123,7 @@ public static class SpecialNames {
     public const string FakeRecipe = "fake-recipe";
     public const string FixedRecipe = "fixed-recipe.";
     public const string GeneratorRecipe = "generator";
+    public const string FusionGeneratorRecipe = "generator-fusion";
     public const string PumpingRecipe = "pump.";
     public const string Labs = "labs.";
     public const string TechnologyTrigger = "technology-trigger";
