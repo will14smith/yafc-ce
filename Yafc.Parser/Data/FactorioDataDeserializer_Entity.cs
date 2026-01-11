@@ -476,20 +476,36 @@ internal partial class FactorioDataDeserializer {
                 pump.basePower = ParseEnergy(usesPower);
                 pump.baseCraftingSpeed = table.Get("pumping_speed", 20f) / 20f;
 
-                if (table.Get("fluid_box", out LuaTable? fluidBox) && fluidBox.Get("fluid", out string? fluidName)) {
-                    var pumpingFluid = GetFluidFixedTemp(fluidName, 0);
-                    string recipeCategory = SpecialNames.PumpingRecipe + pumpingFluid.name;
-                    recipe = CreateSpecialRecipe(pumpingFluid, recipeCategory, LSs.SpecialRecipePumping);
-                    recipeCrafters.Add(pump, recipeCategory);
-                    pump.energy = voidEntityEnergy;
+                var hasFluid = false;
+                
+                if (table.Get("fluid_box", out LuaTable? fluidBox)) {
+                    string? fluidName = null;
 
-                    if (recipe.products == null) {
-                        recipe.products = [new Product(pumpingFluid, 1200f)]; // set to Factorio default pump amounts - looks nice in tooltip
-                        recipe.ingredients = [];
-                        recipe.time = 1f;
+                    if (fluidBox.Get("fluid", out fluidName)) {
+                        hasFluid = true;
+                    }
+                    else if (fluidBox.Get("filter", out fluidName)) {
+                        hasFluid = true;
+                    }
+
+                    if (hasFluid) {
+                        var pumpingFluid = GetFluidFixedTemp(fluidName, 0);
+                        string recipeCategory = SpecialNames.PumpingRecipe + pumpingFluid.name;
+                        recipe = CreateSpecialRecipe(pumpingFluid, recipeCategory, LSs.SpecialRecipePumping);
+                        recipeCrafters.Add(pump, recipeCategory);
+                        pump.energy = voidEntityEnergy;
+
+                        if (recipe.products == null) {
+                            recipe.products = [
+                                new Product(pumpingFluid, 1200f)
+                            ]; // set to Factorio default pump amounts - looks nice in tooltip
+                            recipe.ingredients = [];
+                            recipe.time = 1f;
+                        }
                     }
                 }
-                else {
+                
+                if (!hasFluid) {
                     string recipeCategory = SpecialNames.PumpingRecipe + "tile";
                     recipeCrafters.Add(pump, recipeCategory);
                     pump.energy = voidEntityEnergy;
