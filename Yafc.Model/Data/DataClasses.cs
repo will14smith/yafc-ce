@@ -80,6 +80,7 @@ public class FactorioIconPart(string path) {
     public int size = 32;
     public float x, y, r = 1, g = 1, b = 1, a = 1;
     public float scale = 1;
+    public bool? drawBackground;
 
     public bool IsSimple() => x == 0 && y == 0 && r == 1 && g == 1 && b == 1 && a == 1 && scale == 1;
 }

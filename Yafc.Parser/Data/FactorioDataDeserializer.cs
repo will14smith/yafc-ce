@@ -274,7 +274,9 @@ internal partial class FactorioDataDeserializer {
         nint targetSurface = SDL.SDL_CreateRGBSurfaceWithFormat(0, renderSize, renderSize, 0, SDL.SDL_PIXELFORMAT_RGBA8888);
         _ = SDL.SDL_SetSurfaceBlendMode(targetSurface, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
 
+        int layerIndex = 0;
         foreach (var icon in spec) {
+            bool isFirstLayer = layerIndex++ == 0;
             var modPath = FactorioDataSource.ResolveModPath("", icon.path);
 
             if (!cache.TryGetValue(modPath, out nint image)) {
@@ -336,6 +338,47 @@ internal partial class FactorioDataDeserializer {
                 w = sdlSurface.h, // That is correct (cutting mip maps)
                 h = sdlSurface.h
             };
+            
+            // Shadow
+            if (icon.drawBackground ?? isFirstLayer) {
+                int blurRadius = 2;
+                int margin = blurRadius * 2;
+                int shadowW = targetRect.w + margin * 2;
+                int shadowH = targetRect.h + margin * 2;
+
+                nint shadowSurf = SDL.SDL_CreateRGBSurfaceWithFormat(0, shadowW, shadowH, 0, SDL.SDL_PIXELFORMAT_RGBA8888);
+                if (shadowSurf != IntPtr.Zero) {
+                    _ = SDL.SDL_SetSurfaceBlendMode(shadowSurf, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
+
+                    _ = SDL.SDL_SetSurfaceColorMod(image, 0, 0, 0);
+                    _ = SDL.SDL_SetSurfaceAlphaMod(image, 255);
+
+                    SDL.SDL_Rect shadowDstRect = new SDL.SDL_Rect { x = margin, y = margin, w = targetRect.w, h = targetRect.h };
+                    SDL.SDL_Rect tempSrcRect = srcRect;
+                    _ = SDL.SDL_BlitScaled(image, ref tempSrcRect, shadowSurf, ref shadowDstRect);
+
+                    BlurAlpha(shadowSurf, blurRadius);
+
+                    _ = SDL.SDL_SetSurfaceColorMod(shadowSurf, 0, 0, 0);
+                    _ = SDL.SDL_SetSurfaceAlphaMod(shadowSurf, 128);
+
+                    SDL.SDL_Rect finalShadowDestRect = new SDL.SDL_Rect {
+                        x = targetRect.x - margin,
+                        y = targetRect.y - margin,
+                        w = shadowW,
+                        h = shadowH
+                    };
+
+                    SDL.SDL_Rect finalShadowSrcRect = new SDL.SDL_Rect { x = 0, y = 0, w = shadowW, h = shadowH };
+                    _ = SDL.SDL_BlitSurface(shadowSurf, ref finalShadowSrcRect, targetSurface, ref finalShadowDestRect);
+                    SDL.SDL_FreeSurface(shadowSurf);
+                }
+            }
+
+            // Restore
+            _ = SDL.SDL_SetSurfaceColorMod(image, MathUtils.FloatToByte(icon.r), MathUtils.FloatToByte(icon.g), MathUtils.FloatToByte(icon.b));
+            _ = SDL.SDL_SetSurfaceAlphaMod(image, 255);
+            
             _ = SDL.SDL_BlitScaled(image, ref srcRect, targetSurface, ref targetRect);
         }
 
@@ -343,6 +386,72 @@ internal partial class FactorioDataDeserializer {
             targetSurface = SoftwareScaler.DownscaleIcon(targetSurface, cachedIconSize);
         }
         return IconCollection.AddIcon(targetSurface);
+    }
+
+    private static unsafe void BlurAlpha(IntPtr surface, int radius) {
+        SDL.SDL_Surface* surf = (SDL.SDL_Surface*)surface;
+        SDL.SDL_PixelFormat* format = (SDL.SDL_PixelFormat*)surf->format;
+
+        int w = surf->w;
+        int h = surf->h;
+        int pitch = surf->pitch / 4; // assuming 32-bit
+        uint* pixels = (uint*)surf->pixels;
+
+        uint amask = format->Amask;
+        byte ashift = format->Ashift;
+
+        // Temporary buffer for horizontal blur
+        byte[] buffer = new byte[w * h];
+
+        // 1. Horizontal Pass
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int sum = 0;
+                int count = 0;
+
+                for (int k = -radius; k <= radius; k++) {
+                    int px = x + k;
+                    if (px >= 0 && px < w) {
+                        uint p = pixels[y * pitch + px];
+                        sum += (int)((p & amask) >> ashift);
+                        count++;
+                    }
+                }
+                buffer[y * w + x] = (byte)(sum / count);
+            }
+        }
+
+        // 2. Vertical Pass and Write Back
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                int sum = 0;
+                int count = 0;
+
+                for (int k = -radius; k <= radius; k++) {
+                    int py = y + k;
+                    if (py >= 0 && py < h) {
+                        sum += buffer[py * w + x];
+                        count++;
+                    }
+                }
+
+                uint p = pixels[y * pitch + x];
+                p &= ~amask;
+                p |= ((uint)(sum / count) << ashift) & amask;
+                pixels[y * pitch + x] = p;
+            }
+        }
+    }
+
+    private class SurfaceHandle {
+        public IntPtr Ptr;
+        public bool Loaded;
+
+        public SurfaceHandle() { }
+        public SurfaceHandle(IntPtr ptr) {
+            Ptr = ptr;
+            Loaded = true;
+        }
     }
 
     /// <summary>
