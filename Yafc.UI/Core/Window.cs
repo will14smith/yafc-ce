@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using SDL2;
 using Serilog;
 
 namespace Yafc.UI;
 
-public abstract class Window : IDisposable {
+public abstract partial class Window : IDisposable {
     private static readonly ILogger logger = Logging.GetLogger<Window>();
 
     public readonly ImGui rootGui;
@@ -195,8 +196,24 @@ public abstract class Window : IDisposable {
             this.nextRepaintTime = nextRepaintTime;
         }
     }
+    
+    [LibraryImport("dwmapi.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool DwmSetWindowAttribute(IntPtr hwnd, int attr, [MarshalAs(UnmanagedType.Bool)] ref bool attrValue, int attrSize);
+    private const int DwmwaUseImmersiveDarkMode = 20;
 
-    internal virtual void DarkModeChanged() { }
+    internal virtual void DarkModeChanged() {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            return;
+        }
+
+        bool useDarkMode = RenderingUtils.darkMode;
+            
+        SDL.SDL_SysWMinfo info = new();
+        _ = SDL.SDL_GetWindowWMInfo(window, ref info);
+
+        _ = DwmSetWindowAttribute(info.info.win.window, DwmwaUseImmersiveDarkMode, ref useDarkMode, sizeof(int));
+    }
 
     public void ShowTooltip(Tooltip tooltip) {
         this.tooltip = tooltip;

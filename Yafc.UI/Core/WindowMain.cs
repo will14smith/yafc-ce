@@ -39,6 +39,8 @@ public abstract class WindowMain(Padding padding, bool forceSoftwareRenderer) : 
     }
 
     internal override void DarkModeChanged() {
+        base.DarkModeChanged();
+        
         if (surface != null) {
             // Replace surface to (1) replace circleTexture, which is used for drawing shadows, and (2) invalidate the faded background from FadeDrawer.
             surface.Dispose();
