@@ -161,18 +161,18 @@ public static class RenderingUtils {
         Set(SchemeColor.Reserved1, ColorFromHex(0x1b5e20));
 
         // Pure colors (always the same regardless of theme)
-        Set(SchemeColor.PureBackground, Black);
+        Set(SchemeColor.PureBackground, ColorFromHex(0x242424));
         Set(SchemeColor.PureForeground, White);
         Set(SchemeColor.Source, White);
         Set(SchemeColor.SourceFaint, WhiteTransparent);
 
         // Background group - main UI background colors
-        Set(SchemeColor.Background, ColorFromHex(0x141414));        // Dark grey background
+        Set(SchemeColor.Background, ColorFromHex(0x313131));             // Dark grey background
         Set(SchemeColor.BackgroundAlt, Black);                      // Black alternative
         Set(SchemeColor.BackgroundText, White);                     // White text on background
         Set(SchemeColor.BackgroundTextFaint, WhiteTransparent);     // Faded white text
         Set(SchemeColor.BackgroundIcon, White);                     // White icons on dark background
-        Set(SchemeColor.BackgroundIconAlt, ColorFromHex(0xcccccc)); // Light grey icons on dark background
+        Set(SchemeColor.BackgroundIconAlt, ColorFromHex(0xcccccc));      // Light grey icons on dark background
 
         // Primary group - main accent colors (cyan/teal)
         Set(SchemeColor.Primary, ColorFromHex(0x006978));           // Dark cyan
