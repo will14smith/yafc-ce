@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Yafc.I18n;
@@ -29,13 +30,21 @@ internal partial class FactorioDataDeserializer {
 
     private void DeserializeRecipe(LuaTable table, ErrorCollector errorCollector) {
         var recipe = DeserializeWithDifficulty<Recipe>(table, "recipe", LoadRecipeData, errorCollector);
+
         _ = table.Get("category", out string recipeCategory, "crafting");
+        _ = table.Get("additional_categories", out LuaTable? additionalCategoriesArray);
+        var additionalCategories = additionalCategoriesArray != null ? additionalCategoriesArray.ArrayElements<string>() : [];
+        
+        HashSet<string> allCategories = [recipeCategory, ..additionalCategories];
+        
         // "recycling-or-hand-crafting" is Scrap recycling. It's special so it isn't considered a potential source recipe when ctrl+clicking.
         // It'll still be used as a ctrl+click consumption recipe for scrap.
-        if (recipeCategory is "recycling" or "recycling-or-hand-crafting") {
+        if (allCategories.Contains("recycling") || allCategories.Contains("recycling-or-hand-crafting")) { 
             recipe.specialType = FactorioObjectSpecialType.Recycling;
         }
-        recipeCategories.Add(recipeCategory, recipe);
+        foreach (string category in allCategories) {
+            recipeCategories.Add(category, recipe);
+        }
         AllowedEffects allowedEffects = AllowedEffects.None;
         if (table.Get("allow_consumption", true)) {
             allowedEffects |= AllowedEffects.Consumption;
