@@ -214,7 +214,7 @@ internal partial class FactorioDataDeserializer {
     private IProgress<(string, string)>? iconRenderedProgress;
 
     private Icon CreateSimpleIcon(Dictionary<(string mod, string path), IntPtr> cache, string graphicsPath)
-        => CreateIconFromSpec(cache, new FactorioIconPart("__core__/graphics/" + graphicsPath + ".png"));
+        => CreateIconFromSpec(cache, new FactorioIconPart("__core__/graphics/" + graphicsPath + ".png") { drawBackground = false });
 
     private void RenderIcons() {
         Dictionary<(string mod, string path), IntPtr> cache = [];
@@ -440,17 +440,6 @@ internal partial class FactorioDataDeserializer {
                 p |= ((uint)(sum / count) << ashift) & amask;
                 pixels[y * pitch + x] = p;
             }
-        }
-    }
-
-    private class SurfaceHandle {
-        public IntPtr Ptr;
-        public bool Loaded;
-
-        public SurfaceHandle() { }
-        public SurfaceHandle(IntPtr ptr) {
-            Ptr = ptr;
-            Loaded = true;
         }
     }
 

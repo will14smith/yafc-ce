@@ -199,7 +199,7 @@ public static class RenderingUtils {
         Set(SchemeColor.ErrorIconAlt, ColorFromHex(0xf44336));      // Lighter red icons for dark mode
 
         // Grey group - neutral/disabled colors
-        Set(SchemeColor.Grey, ColorFromHex(0x343434));              // Dark grey
+        Set(SchemeColor.Grey, ColorFromHex(0x242424));              // Dark grey
         Set(SchemeColor.GreyAlt, ColorFromHex(0x545454));           // Lighter grey
         Set(SchemeColor.GreyText, White);                           // White text on grey
         Set(SchemeColor.GreyTextFaint, WhiteTransparent);           // Faded white text
