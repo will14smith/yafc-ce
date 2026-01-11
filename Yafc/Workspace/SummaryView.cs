@@ -18,9 +18,10 @@ public class SummaryView : ProjectPageView<Summary> {
     private readonly Padding FirstColumnPadding = new Padding(1f, 1.5f, 0, 0);
     private static float firstColumnWidth;
 
-    private class SummaryScrollArea(GuiBuilder builder) : ScrollArea(DefaultHeight, builder, horizontal: true) {
-        private static readonly float DefaultHeight = 10;
+    private class SummaryScrollArea(GuiBuilder builder) : ScrollArea(DefaultHeight, builder, horizontal: true, collapsible: true) {
+        private static readonly float DefaultHeight = 100;
 
+        
         public new void Build(ImGui gui) =>
             // Maximize scroll area to fit parent area (minus header and 'show issues' heights, and some (3) padding probably)
             Build(gui, gui.valid && gui.parent is not null ? gui.parent.contentSize.Y - Font.header.size - Font.text.size - 3 : DefaultHeight);

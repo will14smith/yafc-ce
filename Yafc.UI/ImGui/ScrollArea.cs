@@ -45,8 +45,11 @@ public abstract class Scrollable(bool vertical, bool horizontal, bool collapsibl
             if (requiredContentSize.Y > availableHeight && useBottomPadding) {
                 requiredContentSize.Y += BottomPaddingInPixels / gui.pixelsPerUnit;
             }
+            
+            var needsHorizontalScrollbar = horizontal && requiredContentSize.X > width;
+            requiredContentSize.Y += needsHorizontalScrollbar ? ScrollbarSize : 0f;
         }
-
+        
         float realHeight = collapsible ? MathF.Min(requiredContentSize.Y, availableHeight) : availableHeight;
 
         if (gui.isBuilding) {
@@ -67,7 +70,7 @@ public abstract class Scrollable(bool vertical, bool horizontal, bool collapsibl
 
         rect.Height = realHeight;
         _ = gui.EncapsulateRect(rect);
-
+        
         // Calculate scroller dimensions.
         Vector2 size = new Vector2(width, availableHeight);
         var scrollerSize = size * size / (size + maxScroll);
@@ -86,18 +89,17 @@ public abstract class Scrollable(bool vertical, bool horizontal, bool collapsibl
                 scrollX += gui.actionParameter * 3f;
             }
         }
-        else {
-            if (horizontal && maxScroll.X > 0f) {
-                Rect scrollbarRect = new Rect(rect.X, rect.Bottom - ScrollbarSize, rect.Width, ScrollbarSize);
-                Rect scrollerRect = new Rect(rect.X + scrollerStart.X, scrollbarRect.Y, scrollerSize.X, ScrollbarSize);
-                BuildScrollBar(gui, 0, in scrollbarRect, in scrollerRect);
-            }
+        
+        if (horizontal && maxScroll.X > 0f) {
+            Rect scrollbarRect = new Rect(rect.X, rect.Bottom - ScrollbarSize, rect.Width, ScrollbarSize);
+            Rect scrollerRect = new Rect(rect.X + scrollerStart.X, scrollbarRect.Y, scrollerSize.X, ScrollbarSize);
+            BuildScrollBar(gui, 0, in scrollbarRect, in scrollerRect);
+        }
 
-            if (vertical && maxScroll.Y > 0f) {
-                Rect scrollbarRect = new Rect(rect.Right - ScrollbarSize, rect.Y, ScrollbarSize, rect.Height);
-                Rect scrollerRect = new Rect(scrollbarRect.X, rect.Y + scrollerStart.Y, ScrollbarSize, scrollerSize.Y);
-                BuildScrollBar(gui, 1, in scrollbarRect, in scrollerRect);
-            }
+        if (vertical && maxScroll.Y > 0f) {
+            Rect scrollbarRect = new Rect(rect.Right - ScrollbarSize, rect.Y, ScrollbarSize, rect.Height);
+            Rect scrollerRect = new Rect(scrollbarRect.X, rect.Y + scrollerStart.Y, ScrollbarSize, scrollerSize.Y);
+            BuildScrollBar(gui, 1, in scrollbarRect, in scrollerRect);
         }
     }
 
