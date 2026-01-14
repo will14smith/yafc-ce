@@ -20,11 +20,22 @@ public class SummaryView : ProjectPageView<Summary> {
 
     private class SummaryScrollArea(GuiBuilder builder) : ScrollArea(DefaultHeight, builder, horizontal: true, collapsible: true) {
         private static readonly float DefaultHeight = 100;
+        private float lastHeight = DefaultHeight;
 
-        
-        public new void Build(ImGui gui) =>
+        public new void Build(ImGui gui) {
+            float targetHeight = DefaultHeight;
             // Maximize scroll area to fit parent area (minus header and 'show issues' heights, and some (3) padding probably)
-            Build(gui, gui.valid && gui.parent is not null ? gui.parent.contentSize.Y - Font.header.size - Font.text.size - 3 : DefaultHeight);
+            if (gui.valid && gui.parent is not null) {
+                targetHeight = gui.parent.contentSize.Y - Font.header.size - Font.text.size - 3;
+            }
+
+            if (Math.Abs(targetHeight - lastHeight) > 1f) {
+                lastHeight = targetHeight;
+                Rebuild();
+            }
+
+            Build(gui, targetHeight);
+        }
     }
 
     private class SummaryTabColumn : TextDataColumn<ProjectPage> {
