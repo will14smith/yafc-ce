@@ -116,14 +116,16 @@ internal partial class FactorioDataDeserializer {
 
         // Calculate the size/position of the overlay digits to correspond to the size of the first icon layer.
         int size = fluid.iconSpec?.FirstOrDefault()?.size ?? 64;
-        int shift = 7 * size / 32;
-        int xoffset = 12 * size / 32;
-        int yoffset = size / -2;
+        float scale = fluid.iconSpec?.FirstOrDefault()?.scale ?? 1;
+
+        float shift = 7 * size / 32f * scale;
+        float xoffset = 12 * size / 32f * scale;
+        float yoffset = size / -2f * scale;
 
         fluid.iconSpec =
         [
             .. fluid.iconSpec ?? [],
-            .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { size = size, y = yoffset, x = (n * shift) - xoffset, scale = 0.28f }),
+            .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { size = size, y = yoffset, x = (n * shift) - xoffset, scale = 0.28f * scale }),
         ];
     }
 
